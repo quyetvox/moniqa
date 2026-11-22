@@ -215,13 +215,19 @@ BUILD_CMD=("npm" "run" "tauri" "build" "--" "--target" "$RUST_TARGET")
 
 printf "\n"
 if [[ "$VERBOSE" == true ]]; then
-  "${BUILD_CMD[@]}" || die "Tauri build failed"
+  "${BUILD_CMD[@]}" || die "Tauri build failed — see output above"
 else
-  "${BUILD_CMD[@]}" 2>&1 \
-    | grep --line-buffered -E "(Compiling moniqa|Finished|Bundling|Bundle at|^error\[|^error)" \
-    || true
-  # Check exit status separately
-  "${BUILD_CMD[@]}" &>/dev/null || die "Tauri build failed — rerun with -v to see full error"
+  # Use a temp log to capture output + preserve exit code (no double-build)
+  BUILD_LOG="$(mktemp /tmp/moniqa-build-XXXX.log)"
+  if "${BUILD_CMD[@]}" >"$BUILD_LOG" 2>&1; then
+    grep -E "(Compiling moniqa|Finished|Bundling|Bundle at)" "$BUILD_LOG" || true
+    rm -f "$BUILD_LOG"
+  else
+    # Show only the actual errors
+    grep -E "(^error\[|^error|failed to build)" "$BUILD_LOG" || tail -20 "$BUILD_LOG"
+    rm -f "$BUILD_LOG"
+    die "Tauri build failed — rerun with -v for full output"
+  fi
 fi
 
 # ─── Locate output bundles ────────────────────────────────────────────────────
