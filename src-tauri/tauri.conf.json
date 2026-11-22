@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MoniQA",
+  "version": "0.1.0",
+  "identifier": "com.moniqa.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MoniQA",
+        "width": 340,
+        "height": 490,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "visible": false,
+        "resizable": false,
+        "url": "/"
+      },
+      {
+        "label": "dashboard",
+        "title": "MoniQA — macOS Resource Monitor",
+        "width": 960,
+        "height": 660,
+        "decorations": true,
+        "transparent": false,
+        "visible": false,
+        "resizable": true,
+        "url": "/dashboard"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
