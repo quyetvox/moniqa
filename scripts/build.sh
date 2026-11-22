@@ -4,9 +4,9 @@
 # Usage: ./scripts/build.sh [--platform <target>] [--help]
 #
 # Platforms:
-#   m1, m2, arm64        → aarch64-apple-darwin  (Apple Silicon)   [default]
-#   intel, x86, i3..i9   → x86_64-apple-darwin   (Intel Mac)
-#   universal, fat       → universal-apple-darwin  (ARM64 + Intel fat binary)
+#   macos, macos-arm     → aarch64-apple-darwin  (Apple Silicon)   [default]
+#   macos-intel          → x86_64-apple-darwin   (Intel Mac)
+#   macos-universal      → universal-apple-darwin (ARM64 + Intel fat binary)
 # =============================================================================
 
 set -euo pipefail
@@ -28,7 +28,7 @@ error()   { printf "${RED}[ERROR]${RESET} %s\n" "$*" >&2; }
 die()     { error "$*"; exit 1; }
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
-DEFAULT_PLATFORM="m1"
+DEFAULT_PLATFORM="macos"
 PLATFORM=""
 SIGN=false
 VERBOSE=false
@@ -43,33 +43,34 @@ usage() {
   printf "  ./scripts/build.sh [OPTIONS]\n"
   printf "\n"
   printf "${BOLD}OPTIONS${RESET}\n"
-  printf "  ${CYAN}-p, --platform <name>${RESET}   Target platform (default: m1)\n"
+  printf "  ${CYAN}-p, --platform <name>${RESET}   Target platform (default: macos)\n"
   printf "  ${CYAN}-s, --sign${RESET}              Enable code signing (requires Apple Dev cert)\n"
   printf "  ${CYAN}-v, --verbose${RESET}           Show full Rust/Tauri build output\n"
   printf "  ${CYAN}-h, --help${RESET}              Show this help\n"
   printf "\n"
   printf "${BOLD}PLATFORMS${RESET}\n"
-  printf "  ${GREEN}m1, m2, m3, arm64, aarch64, apple-silicon${RESET}\n"
+  printf "  ${GREEN}macos${RESET}, ${GREEN}macos-arm${RESET}\n"
   printf "      → aarch64-apple-darwin   ${DIM}(Apple Silicon — default)${RESET}\n"
   printf "\n"
-  printf "  ${GREEN}intel, x86, x86_64, i3, i5, i7, i9${RESET}\n"
+  printf "  ${GREEN}macos-intel${RESET}\n"
   printf "      → x86_64-apple-darwin    ${DIM}(Intel Mac)${RESET}\n"
   printf "\n"
-  printf "  ${GREEN}universal, fat, universal-binary${RESET}\n"
+  printf "  ${GREEN}macos-universal${RESET}\n"
   printf "      → universal-apple-darwin ${DIM}(ARM64 + Intel, runs on both)${RESET}\n"
   printf "\n"
   printf "${BOLD}EXAMPLES${RESET}\n"
   printf "  ${DIM}# Build for Apple Silicon (default)${RESET}\n"
   printf "  ./scripts/build.sh\n"
+  printf "  ./scripts/build.sh -p macos\n"
   printf "\n"
   printf "  ${DIM}# Build for Intel Mac${RESET}\n"
-  printf "  ./scripts/build.sh --platform intel\n"
+  printf "  ./scripts/build.sh -p macos-intel\n"
   printf "\n"
   printf "  ${DIM}# Build Universal Binary (runs on both)${RESET}\n"
-  printf "  ./scripts/build.sh --platform universal\n"
+  printf "  ./scripts/build.sh -p macos-universal\n"
   printf "\n"
-  printf "  ${DIM}# Build for Intel with verbose logs${RESET}\n"
-  printf "  ./scripts/build.sh -p x86 -v\n"
+  printf "  ${DIM}# Verbose mode — show full Rust compile log${RESET}\n"
+  printf "  ./scripts/build.sh -p macos-intel -v\n"
   printf "\n"
   exit 0
 }
@@ -103,23 +104,27 @@ PLATFORM="${PLATFORM:-$DEFAULT_PLATFORM}"
 
 # ─── Resolve platform → Rust target ──────────────────────────────────────────
 case "${PLATFORM,,}" in
-  m1|m2|m3|arm64|aarch64|apple-silicon)
+  macos|macos-arm|arm|arm64)
     RUST_TARGET="aarch64-apple-darwin"
-    PLATFORM_LABEL="Apple Silicon (M1/M2/M3)"
+    PLATFORM_LABEL="macOS — Apple Silicon (ARM64)"
     ;;
-  intel|x86|x86_64|i3|i5|i7|i9)
+  macos-intel|intel)
     RUST_TARGET="x86_64-apple-darwin"
-    PLATFORM_LABEL="Intel Mac (x86_64)"
+    PLATFORM_LABEL="macOS — Intel (x86_64)"
     ;;
-  universal|fat|universal-binary)
+  macos-universal|universal)
     RUST_TARGET="universal-apple-darwin"
-    PLATFORM_LABEL="Universal Binary (ARM64 + Intel)"
+    PLATFORM_LABEL="macOS — Universal Binary (ARM64 + Intel)"
     ;;
   *)
     error "Unknown platform: '${PLATFORM}'"
     printf "\n"
-    printf "  Supported: m1, m2, arm64, intel, x86, i3, i5, i7, universal, fat\n"
-    printf "  Run:  ./scripts/build.sh --help\n"
+    printf "  Supported platforms:\n"
+    printf "    macos, macos-arm      → Apple Silicon\n"
+    printf "    macos-intel           → Intel Mac\n"
+    printf "    macos-universal       → Universal Binary\n"
+    printf "\n"
+    printf "  Run: ./scripts/build.sh --help\n"
     exit 1
     ;;
 esac
@@ -135,10 +140,10 @@ printf "${BOLD}╔════════════════════�
 printf "${BOLD}║         MoniQA — Build System            ║${RESET}\n"
 printf "${BOLD}╚══════════════════════════════════════════╝${RESET}\n"
 printf "\n"
-printf "  ${DIM}Platform  :${RESET} ${GREEN}${PLATFORM_LABEL}${RESET}\n"
-printf "  ${DIM}Target    :${RESET} ${CYAN}${RUST_TARGET}${RESET}\n"
-printf "  ${DIM}Signing   :${RESET} $([ "$SIGN" = true ] && printf "${YELLOW}Enabled${RESET}" || printf "${DIM}Disabled${RESET}")\n"
-printf "  ${DIM}Project   :${RESET} ${PROJECT_ROOT}\n"
+printf "  ${DIM}Platform  :${RESET} ${GREEN}%s${RESET}\n" "$PLATFORM_LABEL"
+printf "  ${DIM}Target    :${RESET} ${CYAN}%s${RESET}\n" "$RUST_TARGET"
+printf "  ${DIM}Signing   :${RESET} %s\n" "$([ "$SIGN" = true ] && printf "${YELLOW}Enabled${RESET}" || printf "${DIM}Disabled${RESET}")"
+printf "  ${DIM}Project   :${RESET} %s\n" "$PROJECT_ROOT"
 printf "\n"
 
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
@@ -160,7 +165,7 @@ fi
 
 # Intel cross-compile warning
 if [[ "$RUST_TARGET" == "x86_64-apple-darwin" ]]; then
-  warn "Cross-compiling to x86_64. If build fails, run: xcode-select --install"
+  warn "Cross-compiling to Intel x86_64. If build fails, run: xcode-select --install"
 fi
 
 # Node modules check
@@ -220,8 +225,8 @@ printf "${BOLD}╔════════════════════�
 printf "${BOLD}║         Build Complete ✓                 ║${RESET}\n"
 printf "${BOLD}╚══════════════════════════════════════════╝${RESET}\n"
 printf "\n"
-printf "  ${DIM}Platform :${RESET} ${GREEN}${PLATFORM_LABEL}${RESET}\n"
-printf "  ${DIM}Target   :${RESET} ${CYAN}${RUST_TARGET}${RESET}\n"
+printf "  ${DIM}Platform :${RESET} ${GREEN}%s${RESET}\n" "$PLATFORM_LABEL"
+printf "  ${DIM}Target   :${RESET} ${CYAN}%s${RESET}\n" "$RUST_TARGET"
 printf "\n"
 
 if [[ -n "$APP_PATH" && -d "$APP_PATH" ]]; then
