@@ -41,7 +41,7 @@ impl CollectorHub {
         let (disk, network) = self.disk_net.collect();
         let top_processes = processes::collect_top_processes(&self.sys, 15);
         let battery = battery::collect_battery();
-        let (gpu, thermal, fans) = self.apple_silicon.collect(1000, memory.total_bytes);
+        let (gpu, thermal, fans) = self.apple_silicon.collect(3000, memory.total_bytes);
         let system_info = system_info::collect_system_info(Some(self.apple_silicon.get_chip_name()));
 
         let timestamp = SystemTime::now()

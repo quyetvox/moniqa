@@ -32,7 +32,7 @@
         "transparent": false,
         "visible": false,
         "resizable": true,
-        "url": "/dashboard"
+        "url": "/dashboard/"
       }
     ],
     "security": {

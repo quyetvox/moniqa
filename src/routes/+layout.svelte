@@ -14,8 +14,12 @@
       stats.destroy();
     };
   });
+
+  $effect(() => {
+    theme.apply();
+  });
 </script>
 
-<div class="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+<div class="{theme.isDark ? 'dark' : ''} min-h-screen telemetry-grid transition-colors duration-300">
   {@render children?.()}
 </div>

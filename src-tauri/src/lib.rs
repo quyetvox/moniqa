@@ -128,7 +128,7 @@ pub fn run() {
                         let _ = tray_lock.set_title(Some(&tray_title));
                     }
 
-                    std::thread::sleep(Duration::from_millis(1000));
+                    std::thread::sleep(Duration::from_millis(3000));
                 }
             });
 

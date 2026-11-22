@@ -23,10 +23,15 @@ class ThemeStore {
 
   apply() {
     if (typeof document !== "undefined") {
+      const root = document.documentElement;
       if (this.isDark) {
-        document.documentElement.classList.add("dark");
+        root.classList.add("dark");
+        root.classList.remove("light");
+        root.style.colorScheme = "dark";
       } else {
-        document.documentElement.classList.remove("dark");
+        root.classList.remove("dark");
+        root.classList.add("light");
+        root.style.colorScheme = "light";
       }
     }
   }
