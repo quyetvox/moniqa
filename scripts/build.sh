@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # MoniQA — Build CLI Script
-# Usage: ./scripts/build.sh [--platform <target>] [--help]
+# Usage: ./scripts/build.sh [-p <platform>] [-v] [-s] [-h]
 #
 # Platforms:
 #   macos, macos-arm     → aarch64-apple-darwin  (Apple Silicon)   [default]
@@ -10,6 +10,11 @@
 # =============================================================================
 
 set -euo pipefail
+
+# ─── Ensure ~/.cargo/bin in PATH (for subshells spawned by npm) ───────────────
+# shellcheck source=/dev/null
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+export PATH="$HOME/.cargo/bin:$PATH"
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 RED=$'\033[0;31m'
@@ -63,7 +68,7 @@ usage() {
   printf "  ./scripts/build.sh\n"
   printf "  ./scripts/build.sh -p macos\n"
   printf "\n"
-  printf "  ${DIM}# Build for Intel Mac${RESET}\n"
+  printf "  ${DIM}# Build for Intel Mac (cross-compile from M1)${RESET}\n"
   printf "  ./scripts/build.sh -p macos-intel\n"
   printf "\n"
   printf "  ${DIM}# Build Universal Binary (runs on both)${RESET}\n"
@@ -102,7 +107,7 @@ done
 
 PLATFORM="${PLATFORM:-$DEFAULT_PLATFORM}"
 
-# ─── Resolve platform → Rust target ──────────────────────────────────────────
+# ─── Resolve platform → Rust target (bash 3.2 compat: no ${VAR,,}) ────────────
 PLATFORM_LOWER="$(printf '%s' "$PLATFORM" | tr '[:upper:]' '[:lower:]')"
 case "$PLATFORM_LOWER" in
   macos|macos-arm|arm|arm64)
@@ -155,34 +160,30 @@ if ! command -v rustup &>/dev/null; then
   warn "rustup not found. Installing automatically..."
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path \
     || die "Failed to install rustup. Install manually: https://rustup.rs"
-  # Source cargo env for current session
-  # shellcheck source=/dev/null
-  source "$HOME/.cargo/env" 2>/dev/null || export PATH="$HOME/.cargo/bin:$PATH"
+  source "$HOME/.cargo/env" 2>/dev/null || true
+  export PATH="$HOME/.cargo/bin:$PATH"
   success "rustup installed"
 else
-  success "rustup found: $(rustup --version 2>/dev/null | head -1)"
+  success "rustup: $(rustup --version 2>/dev/null | head -1)"
 fi
 
-if ! command -v cargo &>/dev/null; then
-  source "$HOME/.cargo/env" 2>/dev/null || export PATH="$HOME/.cargo/bin:$PATH"
-  command -v cargo &>/dev/null || die "cargo not found after rustup install"
-fi
+command -v cargo &>/dev/null || die "cargo not found after rustup setup"
+command -v npm   &>/dev/null || die "npm not found — install Node.js: https://nodejs.org"
+command -v node  &>/dev/null || die "node not found — install Node.js: https://nodejs.org"
 
-command -v npm    &>/dev/null || die "npm not found — install Node.js from https://nodejs.org"
-command -v node   &>/dev/null || die "node not found — install Node.js from https://nodejs.org"
-
-# Install Rust target if not present
+# Install Rust cross-compile target if not present
 if ! rustup target list --installed | grep -q "^${RUST_TARGET}$"; then
-  info "Rust target '${RUST_TARGET}' not installed. Installing..."
-  rustup target add "$RUST_TARGET" || die "Failed to install Rust target: $RUST_TARGET"
-  success "Target installed: $RUST_TARGET"
+  info "Installing Rust target: ${RUST_TARGET}..."
+  rustup target add "$RUST_TARGET" || die "Failed to add Rust target: $RUST_TARGET"
+  success "Rust target installed: $RUST_TARGET"
 else
   success "Rust target ready: $RUST_TARGET"
 fi
 
-# Intel cross-compile warning
+# Intel cross-compile note
 if [[ "$RUST_TARGET" == "x86_64-apple-darwin" ]]; then
-  warn "Cross-compiling to Intel x86_64. If build fails, run: xcode-select --install"
+  warn "Cross-compiling for Intel x86_64 from Apple Silicon."
+  warn "If build fails with linker error, run: xcode-select --install"
 fi
 
 # Node modules check
@@ -204,20 +205,23 @@ success "Frontend build complete → build/"
 # ─── Tauri release build ──────────────────────────────────────────────────────
 info "Building Tauri release (this takes ~2–5 min)..."
 
-BUILD_CMD=("npm" "run" "tauri" "build" "--" "--target" "$RUST_TARGET")
+# Pass PATH explicitly so cargo/rustup is found by npm subshell
+export PATH="$HOME/.cargo/bin:$PATH"
 
 # Disable code signing if not requested
-if [[ "$SIGN" == false ]]; then
-  export APPLE_SIGNING_IDENTITY="-"
-fi
+[[ "$SIGN" == false ]] && export APPLE_SIGNING_IDENTITY="-"
+
+BUILD_CMD=("npm" "run" "tauri" "build" "--" "--target" "$RUST_TARGET")
 
 printf "\n"
 if [[ "$VERBOSE" == true ]]; then
   "${BUILD_CMD[@]}" || die "Tauri build failed"
 else
   "${BUILD_CMD[@]}" 2>&1 \
-    | grep --line-buffered -E "(Compiling|Finished|Bundling|Bundle at|error\[|^error)" \
-    || die "Tauri build failed"
+    | grep --line-buffered -E "(Compiling moniqa|Finished|Bundling|Bundle at|^error\[|^error)" \
+    || true
+  # Check exit status separately
+  "${BUILD_CMD[@]}" &>/dev/null || die "Tauri build failed — rerun with -v to see full error"
 fi
 
 # ─── Locate output bundles ────────────────────────────────────────────────────
