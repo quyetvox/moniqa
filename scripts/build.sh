@@ -103,7 +103,8 @@ done
 PLATFORM="${PLATFORM:-$DEFAULT_PLATFORM}"
 
 # ─── Resolve platform → Rust target ──────────────────────────────────────────
-case "${PLATFORM,,}" in
+PLATFORM_LOWER="$(printf '%s' "$PLATFORM" | tr '[:upper:]' '[:lower:]')"
+case "$PLATFORM_LOWER" in
   macos|macos-arm|arm|arm64)
     RUST_TARGET="aarch64-apple-darwin"
     PLATFORM_LABEL="macOS — Apple Silicon (ARM64)"
