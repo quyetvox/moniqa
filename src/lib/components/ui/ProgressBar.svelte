@@ -1,7 +1,7 @@
 <script lang="ts">
   interface Props {
     value: number; // 0 to 100
-    color?: string;
+    color?: string; // CSS color string e.g. "#06b6d4"
     segments?: number;
     showPercent?: boolean;
     height?: string;
@@ -27,11 +27,20 @@
 
   let segmentList = $derived(Array.from({ length: Math.max(segments, 1) }, (_, i) => i));
 
-  let activeColor = $derived.by(() => {
+  // Return a plain CSS hex/rgb color — no Tailwind classes (they get purged when dynamic)
+  let activeColorHex = $derived.by(() => {
     if (color) return color;
-    if (clamped < 65) return "bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]";
-    if (clamped < 85) return "bg-amber-500 dark:bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)]";
-    return "bg-rose-500 dark:bg-rose-400 shadow-[0_0_6px_rgba(244,63,94,0.9)]";
+    if (clamped < 65) return "#06b6d4"; // cyan-500
+    if (clamped < 85) return "#f59e0b"; // amber-500
+    return "#f43f5e"; // rose-500
+  });
+
+  // Glow shadow string
+  let glowShadow = $derived.by(() => {
+    if (color) return `0 0 6px ${color}99`;
+    if (clamped < 65) return "0 0 6px rgba(6,182,212,0.8)";
+    if (clamped < 85) return "0 0 6px rgba(245,158,11,0.8)";
+    return "0 0 6px rgba(244,63,94,0.9)";
   });
 </script>
 
@@ -43,9 +52,10 @@
     {#each segmentList as i (i)}
       {@const isActive = i < activeCount}
       <div
-        class="flex-1 h-full min-h-[4px] rounded-[1px] transition-all duration-200 {isActive
-          ? activeColor
-          : 'bg-slate-300/80 dark:bg-slate-800/70'}"
+        class="flex-1 h-full min-h-[4px] rounded-[1px] transition-all duration-200"
+        style={isActive
+          ? `background-color: ${activeColorHex}; box-shadow: ${glowShadow};`
+          : "background-color: rgba(100,116,139,0.3);"}
       ></div>
     {/each}
   </div>
