@@ -11,13 +11,11 @@
 
   let { thermal, fans }: Props = $props();
 
-  let maxTemp = $derived(() => {
-    return Math.max(thermal.cpu_temp_c, thermal.gpu_temp_c);
-  });
+  let maxTemp = $derived(Math.max(thermal.cpu_temp_c, thermal.gpu_temp_c));
 
-  let tempBadgeColor = $derived(() => {
-    if (maxTemp() < 60) return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
-    if (maxTemp() < 80) return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+  let tempBadgeColor = $derived.by(() => {
+    if (maxTemp < 60) return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+    if (maxTemp < 80) return "text-amber-500 bg-amber-500/10 border-amber-500/20";
     return "text-rose-500 bg-rose-500/10 border-rose-500/20";
   });
 </script>
@@ -25,13 +23,13 @@
 <Card
   tag="// THERMAL-MATRIX.04"
   title="Thermals & Cooling Array"
-  badge={formatTemp(maxTemp())}
-  badgeColor={tempBadgeColor()}
+  badge={formatTemp(maxTemp)}
+  badgeColor={tempBadgeColor}
 >
   {#snippet headerAction()}
     <div class="flex items-center gap-1.5 text-xs font-mono text-orange-500">
       <Thermometer class="w-3.5 h-3.5" />
-      <span>{maxTemp() >= 80 ? "HOT" : "NOMINAL"}</span>
+      <span>{maxTemp >= 80 ? "HOT" : "NOMINAL"}</span>
     </div>
   {/snippet}
 

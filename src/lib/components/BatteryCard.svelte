@@ -10,7 +10,7 @@
 
   let { battery }: Props = $props();
 
-  let battColor = $derived(() => {
+  let battColor = $derived.by(() => {
     if (battery.is_charging) return "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]";
     if (battery.charge_percent < 20) return "bg-rose-500 dark:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.7)]";
     if (battery.charge_percent < 50) return "bg-amber-500 dark:bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.7)]";
@@ -52,7 +52,7 @@
           </span>
         {/if}
       </div>
-      <ProgressBar value={battery.charge_percent} height="h-3" segments={24} color={battColor()} />
+      <ProgressBar value={battery.charge_percent} height="h-3" segments={24} color={battColor} />
     </div>
 
     <!-- Health & Cycles -->

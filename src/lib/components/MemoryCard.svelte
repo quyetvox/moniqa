@@ -13,21 +13,19 @@
 
   let { memory }: Props = $props();
 
-  let percentUsed = $derived(() => {
-    if (!memory.total_bytes || memory.total_bytes === 0) return 0;
-    return (memory.used_bytes / memory.total_bytes) * 100;
-  });
+  let percentUsed = $derived(
+    memory.total_bytes > 0 ? (memory.used_bytes / memory.total_bytes) * 100 : 0
+  );
 
-  let swapPercent = $derived(() => {
-    if (!memory.swap_total_bytes || memory.swap_total_bytes === 0) return 0;
-    return (memory.swap_used_bytes / memory.swap_total_bytes) * 100;
-  });
+  let swapPercent = $derived(
+    memory.swap_total_bytes > 0 ? (memory.swap_used_bytes / memory.swap_total_bytes) * 100 : 0
+  );
 </script>
 
 <Card
   tag="// MEM-RAM.02"
   title="Physical & Swap Memory"
-  badge={`${percentUsed().toFixed(1)}%`}
+  badge={`${percentUsed.toFixed(1)}%`}
   badgeColor="text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20"
 >
   {#snippet headerAction()}
@@ -53,7 +51,7 @@
           </span>
         </div>
         <ProgressBar
-          value={percentUsed()}
+          value={percentUsed}
           height="h-3"
           segments={28}
           color="bg-purple-500 dark:bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]"
@@ -87,8 +85,8 @@
         </span>
       </div>
       <ProgressBar
-        value={swapPercent()}
-        height="h-2"
+        value={swapPercent}
+        height="h-2.5"
         segments={24}
         color="bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]"
       />

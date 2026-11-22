@@ -22,10 +22,11 @@
 
   let { snapshot }: Props = $props();
 
-  let ramPercent = $derived(() => {
-    if (!snapshot.memory.total_bytes) return 0;
-    return (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100;
-  });
+  let ramPercent = $derived(
+    snapshot.memory.total_bytes > 0
+      ? (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100
+      : 0
+  );
 
   async function openDashboard() {
     try {
@@ -105,7 +106,7 @@
           {/if}
         </div>
       </div>
-      <ProgressBar value={snapshot.cpu.global_usage} height="h-2" segments={20} />
+      <ProgressBar value={snapshot.cpu.global_usage} height="h-2.5" segments={20} />
     </div>
 
     <!-- RAM -->
@@ -120,8 +121,8 @@
         </span>
       </div>
       <ProgressBar
-        value={ramPercent()}
-        height="h-2"
+        value={ramPercent}
+        height="h-2.5"
         segments={20}
         color="bg-purple-500 dark:bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]"
       />
@@ -145,7 +146,7 @@
       </div>
       <ProgressBar
         value={snapshot.gpu.usage_percent}
-        height="h-2"
+        height="h-2.5"
         segments={20}
         color="bg-amber-500 dark:bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]"
       />
@@ -183,7 +184,7 @@
         </div>
         <ProgressBar
           value={snapshot.battery.charge_percent}
-          height="h-1.5"
+          height="h-2"
           segments={12}
           color={snapshot.battery.is_charging ? "bg-emerald-500" : undefined}
         />

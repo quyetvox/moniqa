@@ -13,7 +13,7 @@
 
   let { cpu, detailed = true }: Props = $props();
 
-  let avgFreq = $derived(() => {
+  let avgFreq = $derived.by(() => {
     if (!cpu.frequency_mhz || cpu.frequency_mhz.length === 0) return 0;
     const sum = cpu.frequency_mhz.reduce((a, b) => a + b, 0);
     return Math.round(sum / cpu.frequency_mhz.length);
@@ -43,9 +43,9 @@
             </span>
             <span class="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400">%</span>
           </div>
-          {#if avgFreq() > 0}
+          {#if avgFreq > 0}
             <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-              {avgFreq()} MHz
+              {avgFreq} MHz
             </span>
           {/if}
         </div>
@@ -84,12 +84,12 @@
           {#each cpu.per_core as coreUsage, i}
             <div class="bg-slate-100/60 dark:bg-slate-950/60 rounded p-2 border border-slate-200/60 dark:border-slate-800/80">
               <div class="flex justify-between text-[10px] font-mono text-slate-600 dark:text-slate-300 mb-1">
-                <span class="text-slate-400">C{String(i + 1).padStart(2, '0')}</span>
+                <span class="text-slate-400 font-bold">C{String(i + 1).padStart(2, '0')}</span>
                 <span class="font-tabular font-bold {coreUsage > 75 ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'}">
                   {coreUsage.toFixed(0)}%
                 </span>
               </div>
-              <ProgressBar value={coreUsage} height="h-1.5" segments={12} />
+              <ProgressBar value={coreUsage} height="h-2" segments={12} />
             </div>
           {/each}
         </div>
