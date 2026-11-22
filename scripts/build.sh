@@ -150,10 +150,26 @@ printf "\n"
 # ─── Pre-flight checks ────────────────────────────────────────────────────────
 info "Running pre-flight checks..."
 
-command -v rustup &>/dev/null || die "rustup not found — install from https://rustup.rs"
-command -v cargo  &>/dev/null || die "cargo not found"
-command -v npm    &>/dev/null || die "npm not found"
-command -v node   &>/dev/null || die "node not found"
+# Auto-install rustup if not found
+if ! command -v rustup &>/dev/null; then
+  warn "rustup not found. Installing automatically..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path \
+    || die "Failed to install rustup. Install manually: https://rustup.rs"
+  # Source cargo env for current session
+  # shellcheck source=/dev/null
+  source "$HOME/.cargo/env" 2>/dev/null || export PATH="$HOME/.cargo/bin:$PATH"
+  success "rustup installed"
+else
+  success "rustup found: $(rustup --version 2>/dev/null | head -1)"
+fi
+
+if ! command -v cargo &>/dev/null; then
+  source "$HOME/.cargo/env" 2>/dev/null || export PATH="$HOME/.cargo/bin:$PATH"
+  command -v cargo &>/dev/null || die "cargo not found after rustup install"
+fi
+
+command -v npm    &>/dev/null || die "npm not found — install Node.js from https://nodejs.org"
+command -v node   &>/dev/null || die "node not found — install Node.js from https://nodejs.org"
 
 # Install Rust target if not present
 if ! rustup target list --installed | grep -q "^${RUST_TARGET}$"; then
