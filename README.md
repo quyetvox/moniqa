@@ -43,11 +43,28 @@
 
 ### Option 1: Install from `.dmg` (Prebuilt)
 
-1. Download or locate `MoniQA_0.1.0_aarch64.dmg` under `src-tauri/target/release/bundle/dmg/`.
+1. Download the matching `.dmg` from the [latest GitHub Release](https://github.com/quyetvox/moniqa/releases/latest):
+   - `arm64` for Apple Silicon Macs (M1 and later).
+   - `x86_64` for Intel Macs.
 2. Double-click to mount the `.dmg` disk image.
 3. Drag **MoniQA** into your `/Applications` folder.
 4. **First Launch (Gatekeeper Note):**  
-   Since this is a self-built app without an Apple Developer certificate, right-click `MoniQA.app` and choose **Open**, then confirm **Open** on the dialog.
+   Release builds are not signed or notarized with an Apple Developer certificate. On first launch, right-click `MoniQA.app`, choose **Open**, then confirm **Open** on the dialog.
+
+### Publishing a release
+
+The GitHub Actions workflow builds separate DMGs on native Apple Silicon and Intel runners, then attaches both to a GitHub Release. To publish a release:
+
+1. Update the app version in `src-tauri/tauri.conf.json`.
+2. Commit and push the version change to `main`.
+3. Create and push a matching version tag (for example, `v0.1.0`):
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+The tag must match the version in `tauri.conf.json`. The workflow publishes `MoniQA-v<VERSION>-macos-arm64.dmg` and `MoniQA-v<VERSION>-macos-x86_64.dmg` after both builds succeed.
 
 ---
 
@@ -76,8 +93,8 @@ npm run tauri build
 
 The output DMG and App bundle will be generated at:
 ```
-src-tauri/target/release/bundle/dmg/MoniQA_0.1.0_aarch64.dmg
-src-tauri/target/release/bundle/macos/MoniQA.app
+src-tauri/target/<rust-target>/release/bundle/dmg/
+src-tauri/target/<rust-target>/release/bundle/macos/MoniQA.app
 ```
 
 ---
