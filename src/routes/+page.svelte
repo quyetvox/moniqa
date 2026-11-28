@@ -1,30 +1,32 @@
 <script lang="ts">
   import { stats } from "$lib/stores/stats.svelte";
   import TrayPopup from "$lib/components/TrayPopup.svelte";
-  import { Activity } from "@lucide/svelte";
 </script>
 
 <svelte:head>
   <title>MoniQA</title>
 </svelte:head>
 
-<main class="w-full">
+<main class="w-full p-1">
   {#if stats.current}
     <TrayPopup snapshot={stats.current} />
   {:else}
-    <div class="h-[460px] flex flex-col items-center justify-center p-6 text-center space-y-3">
-      <div class="relative">
-        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-500/20">
-          M
-        </div>
-        <div class="absolute -bottom-1 -right-1 p-0.5 bg-white dark:bg-slate-900 rounded-full">
-          <Activity class="w-3.5 h-3.5 text-emerald-500 animate-spin" />
-        </div>
+    <!-- Skeleton matching TrayPopup structure -->
+    <div
+      class="w-[320px] mx-auto p-3 space-y-2.5"
+      style="background: var(--bg-1); border: 1px solid var(--line-strong); border-radius: var(--radius-panel);"
+    >
+      <div class="h-4 w-24 rounded" style="background: var(--bg-2);"></div>
+      <div class="space-y-2 pt-1">
+        {#each [1, 2, 3, 4, 5] as _}
+          <div class="flex items-center justify-between gap-2 h-6">
+            <div class="h-3 w-12 rounded" style="background: var(--bg-2);"></div>
+            <div class="h-4 w-24 rounded" style="background: var(--bg-2);"></div>
+            <div class="h-3 w-14 rounded" style="background: var(--bg-2);"></div>
+          </div>
+        {/each}
       </div>
-      <div>
-        <h2 class="text-xs font-bold text-slate-800 dark:text-white">Connecting...</h2>
-        <p class="text-[10px] text-slate-400 mt-0.5">Reading macOS hardware metrics</p>
-      </div>
+      <div class="h-7 w-full rounded" style="background: var(--bg-2);"></div>
     </div>
   {/if}
 </main>

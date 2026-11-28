@@ -101,3 +101,12 @@ export interface SystemInfo {
   uptime_secs: number;
   chip_name: string;
 }
+
+export type DensityMode = "compact" | "comfortable";
+export type NetworkUnit = "bytes" | "bits";
+export type TimeWindow = "60s" | "5m";
+
+export interface SensorBounds {
+  min: number;
+  max: number;
+}

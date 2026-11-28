@@ -21,8 +21,9 @@ fn open_dashboard_window(app: tauri::AppHandle) {
             "dashboard",
             tauri::WebviewUrl::App("/dashboard".into()),
         )
-        .title("MoniQA — macOS Resource Monitor")
-        .inner_size(960.0, 660.0)
+        .title("MoniQA — System Monitor")
+        .inner_size(1040.0, 680.0)
+        .min_inner_size(760.0, 520.0)
         .decorations(true)
         .resizable(true)
         .build();
@@ -35,6 +36,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![open_dashboard_window])
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             let handle = app.handle().clone();
 
             // 1. Build Menu for Tray Icon (Right-click menu)

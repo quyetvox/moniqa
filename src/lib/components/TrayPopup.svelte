@@ -1,19 +1,11 @@
 <script lang="ts">
   import type { SystemSnapshot } from "../types";
-  import ProgressBar from "./ui/ProgressBar.svelte";
+  import Sparkline from "./ui/Sparkline.svelte";
+  import { stats } from "../stores/stats.svelte";
   import { theme } from "../stores/theme.svelte";
+  import { settings } from "../stores/settings.svelte";
   import { formatBytes, formatRate, formatTemp } from "../utils/format";
-  import {
-    Activity,
-    ArrowDown,
-    ArrowUp,
-    BatteryCharging,
-    ExternalLink,
-    HardDrive,
-    Moon,
-    Sun,
-    Zap,
-  } from "@lucide/svelte";
+  import { ArrowUpRight, Moon, Pause, Play, Sun } from "@lucide/svelte";
   import { invoke } from "@tauri-apps/api/core";
 
   interface Props {
@@ -22,182 +14,191 @@
 
   let { snapshot }: Props = $props();
 
-  let ramPercent = $derived(
-    snapshot.memory.total_bytes > 0
-      ? (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100
-      : 0
+  let topProc = $derived(snapshot.top_processes[0] ?? null);
+  let ramGb = $derived(formatBytes(snapshot.memory.used_bytes));
+  let ramTotalGb = $derived(formatBytes(snapshot.memory.total_bytes));
+  let diskTotalRate = $derived(snapshot.disk.read_bytes_per_sec + snapshot.disk.write_bytes_per_sec);
+  let diskSeries = $derived(
+    stats.diskReadHistory.map((r, i) => r + (stats.diskWriteHistory[i] ?? 0))
+  );
+  let netSeries = $derived(
+    stats.netRxHistory.map((r, i) => r + (stats.netTxHistory[i] ?? 0))
   );
 
   async function openDashboard() {
     try {
       await invoke("open_dashboard_window");
-    } catch (e) {
-      console.error("Failed to open dashboard:", e);
+    } catch {
+      // Browser preview fallback
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard";
+      }
     }
   }
 </script>
 
-<div class="w-full max-w-[340px] mx-auto p-4 select-none font-sans bg-slate-50/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl">
-  <!-- Telemetry Header -->
-  <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/80 dark:border-slate-800/80">
-    <div class="flex items-center gap-2.5">
-      <div class="relative w-7 h-7 rounded bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-cyan-500/20">
-        M
-        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900"></span>
-      </div>
-      <div>
-        <div class="flex items-center gap-1.5">
-          <h1 class="text-xs font-black tracking-widest text-slate-900 dark:text-white uppercase">
-            MoniQA
-          </h1>
-          <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-bold">
-            3s
-          </span>
-        </div>
-        <p class="text-[9px] font-mono text-slate-400">TELEMETRY TRAY DECK</p>
-      </div>
+<div
+  class="w-[320px] mx-auto select-none text-[12px]"
+  style="
+    background: var(--bg-1);
+    color: var(--text-1);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-panel);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  "
+>
+  <!-- Header -->
+  <div
+    class="flex items-center justify-between px-3 py-2"
+    style="border-bottom: 1px solid var(--line);"
+  >
+    <div class="flex items-center gap-2">
+      <img src="/logo.svg" alt="MoniQA" class="w-4 h-4 rounded shrink-0" />
+      <span class="font-semibold tracking-tight text-[13px]">MoniQA</span>
+      {#if settings.paused}
+        <span
+          class="px-1.5 py-0.5 text-[10px] font-medium"
+          style="color: var(--warn); background: var(--warn-bg); border-radius: var(--radius);"
+        >
+          Paused
+        </span>
+      {:else}
+        <span class="text-[11px] font-num" style="color: var(--text-3);">
+          {snapshot.system_info.chip_name}
+        </span>
+      {/if}
     </div>
 
-    <!-- Controls (Tactile Theme Switch + Expand Dashboard) -->
-    <div class="flex items-center gap-1.5">
-      <!-- Tactile Physical-style Theme Switch -->
+    <div class="flex items-center gap-1">
       <button
-        onclick={() => theme.toggle()}
-        class="flex items-center gap-1 px-2 py-1 rounded bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300/80 dark:border-slate-700/80 transition-all duration-150 active:scale-95 text-slate-700 dark:text-slate-200"
-        title="Toggle Light / Dark Mode"
+        onclick={() => settings.togglePause()}
+        class="p-1 rounded transition-colors duration-100 hover:bg-[var(--bg-2)]"
+        style="color: var(--text-2);"
+        title={settings.paused ? "Resume updates" : "Pause updates"}
       >
-        {#if theme.isDark}
-          <Sun class="w-3.5 h-3.5 text-amber-400" />
-          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"></span>
+        {#if settings.paused}
+          <Play class="w-3.5 h-3.5" />
         {:else}
-          <Moon class="w-3.5 h-3.5 text-blue-600" />
-          <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_6px_rgba(37,99,235,0.8)]"></span>
+          <Pause class="w-3.5 h-3.5" />
         {/if}
       </button>
-
-      <!-- Expand to Dashboard -->
       <button
-        onclick={openDashboard}
-        class="p-1.5 rounded bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300/80 dark:border-slate-700/80 text-slate-600 hover:text-cyan-600 dark:text-slate-300 dark:hover:text-cyan-400 transition-all duration-150 active:scale-95"
-        title="Open Full Deck"
+        onclick={() => theme.toggle()}
+        class="p-1 rounded transition-colors duration-100 hover:bg-[var(--bg-2)]"
+        style="color: var(--text-2);"
+        title="Toggle theme"
       >
-        <ExternalLink class="w-3.5 h-3.5" />
+        {#if theme.isDark}
+          <Sun class="w-3.5 h-3.5" />
+        {:else}
+          <Moon class="w-3.5 h-3.5" />
+        {/if}
       </button>
     </div>
   </div>
 
-  <!-- Metric Gauges Array -->
-  <div class="space-y-2.5">
+  <!-- 5 Core Metric Rows -->
+  <div class="px-3 py-2 space-y-1.5">
     <!-- CPU -->
-    <div class="bg-white/80 dark:bg-slate-950/60 rounded p-2.5 border border-slate-200/70 dark:border-slate-800/80">
-      <div class="flex justify-between items-baseline mb-1">
-        <span class="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 uppercase">
-          <Activity class="w-3 h-3 text-cyan-500" />
-          CPU LOAD
-        </span>
-        <div class="text-xs font-mono font-tabular">
-          <span class="font-black text-slate-900 dark:text-white">
-            {snapshot.cpu.global_usage.toFixed(1)}%
-          </span>
-          {#if snapshot.thermal.cpu_temp_c > 0}
-            <span class="text-slate-400 text-[10px] ml-1">
-              [{formatTemp(snapshot.thermal.cpu_temp_c)}]
-            </span>
-          {/if}
-        </div>
+    <div class="flex items-center justify-between gap-2 h-7">
+      <div class="flex items-center gap-2 w-16 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--s-cpu);"></span>
+        <span style="color: var(--text-2);">CPU</span>
       </div>
-      <ProgressBar value={snapshot.cpu.global_usage} height="h-2.5" segments={20} />
+      <Sparkline data={stats.cpuHistory.slice(-30)} width={104} height={20} color="var(--s-cpu)" />
+      <div class="w-20 text-right font-num font-medium">
+        {snapshot.cpu.global_usage.toFixed(1)}<span class="text-[10px] ml-0.5" style="color: var(--text-3);">%</span>
+      </div>
     </div>
 
-    <!-- RAM -->
-    <div class="bg-white/80 dark:bg-slate-950/60 rounded p-2.5 border border-slate-200/70 dark:border-slate-800/80">
-      <div class="flex justify-between items-baseline mb-1">
-        <span class="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 uppercase">
-          <HardDrive class="w-3 h-3 text-purple-500" />
-          RAM ACTIVE
-        </span>
-        <span class="text-[11px] font-mono font-tabular font-bold text-slate-900 dark:text-white">
-          {formatBytes(snapshot.memory.used_bytes)} / {formatBytes(snapshot.memory.total_bytes)}
-        </span>
+    <!-- Memory -->
+    <div class="flex items-center justify-between gap-2 h-7">
+      <div class="flex items-center gap-2 w-16 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--s-mem);"></span>
+        <span style="color: var(--text-2);">Memory</span>
       </div>
-      <ProgressBar
-        value={ramPercent}
-        height="h-2.5"
-        segments={20}
-        color="bg-purple-500 dark:bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.6)]"
-      />
+      <Sparkline data={stats.ramHistory.slice(-30)} width={104} height={20} color="var(--s-mem)" />
+      <div class="w-20 text-right font-num font-medium truncate" title="{ramGb} / {ramTotalGb}">
+        {ramGb}
+      </div>
     </div>
 
     <!-- GPU -->
-    <div class="bg-white/80 dark:bg-slate-950/60 rounded p-2.5 border border-slate-200/70 dark:border-slate-800/80">
-      <div class="flex justify-between items-baseline mb-1">
-        <span class="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 uppercase">
-          <Zap class="w-3 h-3 text-amber-500" />
-          GPU COMPUTE
-        </span>
-        <div class="text-xs font-mono font-tabular">
-          <span class="font-black text-slate-900 dark:text-white">
-            {snapshot.gpu.usage_percent.toFixed(1)}%
-          </span>
-          <span class="text-slate-400 text-[10px] ml-1">
-            [{snapshot.gpu.power_watts.toFixed(1)} W]
-          </span>
-        </div>
+    <div class="flex items-center justify-between gap-2 h-7">
+      <div class="flex items-center gap-2 w-16 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--s-gpu);"></span>
+        <span style="color: var(--text-2);">GPU</span>
       </div>
-      <ProgressBar
-        value={snapshot.gpu.usage_percent}
-        height="h-2.5"
-        segments={20}
-        color="bg-amber-500 dark:bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]"
-      />
+      <Sparkline data={stats.gpuHistory.slice(-30)} width={104} height={20} color="var(--s-gpu)" />
+      <div class="w-20 text-right font-num font-medium">
+        {snapshot.gpu.usage_percent.toFixed(1)}<span class="text-[10px] ml-0.5" style="color: var(--text-3);">%</span>
+      </div>
     </div>
 
-    <!-- Quick Stats Grid (Network & Battery) -->
-    <div class="grid grid-cols-2 gap-2 text-xs">
-      <!-- Network Throughput -->
-      <div class="bg-white/80 dark:bg-slate-950/60 rounded p-2 border border-slate-200/70 dark:border-slate-800/80">
-        <div class="text-[9px] font-mono font-bold text-slate-400 uppercase mb-1">BUS I/O</div>
-        <div class="space-y-0.5 font-mono font-tabular text-[10px]">
-          <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
-            <span class="flex items-center gap-0.5"><ArrowDown class="w-2.5 h-2.5" /> DL</span>
-            <span>{formatRate(snapshot.network.total_received_bytes_per_sec)}</span>
-          </div>
-          <div class="flex items-center justify-between text-sky-600 dark:text-sky-400 font-bold">
-            <span class="flex items-center gap-0.5"><ArrowUp class="w-2.5 h-2.5" /> UL</span>
-            <span>{formatRate(snapshot.network.total_transmitted_bytes_per_sec)}</span>
-          </div>
-        </div>
+    <!-- Disk -->
+    <div class="flex items-center justify-between gap-2 h-7">
+      <div class="flex items-center gap-2 w-16 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--s-disk);"></span>
+        <span style="color: var(--text-2);">Disk</span>
       </div>
+      <Sparkline data={diskSeries.slice(-30)} width={104} height={20} color="var(--s-disk)" max={0} />
+      <div class="w-20 text-right font-num font-medium text-[11px]">
+        {formatRate(diskTotalRate)}
+      </div>
+    </div>
 
-      <!-- Battery -->
-      <div class="bg-white/80 dark:bg-slate-950/60 rounded p-2 border border-slate-200/70 dark:border-slate-800/80 flex flex-col justify-between">
-        <div class="flex justify-between items-center text-[9px] font-mono font-bold text-slate-400 uppercase">
-          <span>CELL PWR</span>
-          {#if snapshot.battery.is_charging}
-            <span class="text-emerald-500 font-bold flex items-center gap-0.5">
-              <BatteryCharging class="w-2.5 h-2.5 animate-pulse" /> CHG
-            </span>
-          {/if}
-        </div>
-        <div class="text-sm font-black font-mono font-tabular text-slate-900 dark:text-white my-0.5">
-          {snapshot.battery.charge_percent.toFixed(0)}%
-        </div>
-        <ProgressBar
-          value={snapshot.battery.charge_percent}
-          height="h-2"
-          segments={12}
-          color={snapshot.battery.is_charging ? "bg-emerald-500" : undefined}
-        />
+    <!-- Network -->
+    <div class="flex items-center justify-between gap-2 h-7">
+      <div class="flex items-center gap-2 w-16 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background: var(--s-net);"></span>
+        <span style="color: var(--text-2);">Net</span>
+      </div>
+      <Sparkline data={netSeries.slice(-30)} width={104} height={20} color="var(--s-net)" max={0} />
+      <div class="w-20 text-right font-num font-medium text-[11px]">
+        ↓ {formatRate(snapshot.network.total_received_bytes_per_sec, settings.netUnit)}
       </div>
     </div>
   </div>
 
-  <!-- Open Full Dashboard Button -->
-  <button
-    onclick={openDashboard}
-    class="w-full mt-3 py-2 px-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:scale-[0.98] text-white rounded font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all duration-150 uppercase tracking-wider"
+  <!-- Secondary Context: Top Process, CPU Temp, Battery -->
+  <div
+    class="px-3 py-2 space-y-1 text-[11px]"
+    style="border-top: 1px solid var(--line); background: var(--bg-0);"
   >
-    <span>Open Telemetry Deck</span>
-    <ExternalLink class="w-3.5 h-3.5" />
-  </button>
+    {#if topProc}
+      <div class="flex items-center justify-between gap-2">
+        <span style="color: var(--text-3);">Top</span>
+        <span class="truncate flex-1" style="color: var(--text-2);">{topProc.name}</span>
+        <span class="font-num font-medium">{topProc.cpu_usage.toFixed(1)}%</span>
+      </div>
+    {/if}
+    <div class="flex items-center justify-between gap-2">
+      <span style="color: var(--text-3);">CPU temp</span>
+      <span class="font-num" style="color: var(--text-2);">
+        {formatTemp(snapshot.thermal.cpu_temp_c)}
+        {#if snapshot.battery.has_battery}
+          <span class="mx-1" style="color: var(--text-3);">·</span>
+          Batt {snapshot.battery.charge_percent.toFixed(0)}%{snapshot.battery.is_charging ? " (AC)" : ""}
+        {/if}
+      </span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div
+    class="flex items-center justify-between px-3 py-2"
+    style="border-top: 1px solid var(--line);"
+  >
+    <button
+      onclick={openDashboard}
+      class="flex items-center gap-1 text-[12px] font-medium transition-colors duration-100 hover:underline"
+      style="color: var(--accent);"
+    >
+      <span>Open Monitor</span>
+      <ArrowUpRight class="w-3.5 h-3.5" />
+    </button>
+    <span class="text-[10px] font-num" style="color: var(--text-3);">
+      ↑ {formatRate(snapshot.network.total_transmitted_bytes_per_sec, settings.netUnit)}
+    </span>
+  </div>
 </div>

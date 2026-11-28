@@ -3,64 +3,74 @@
     data: number[];
     width?: number;
     height?: number;
-    strokeColor?: string;
-    fillColor?: string;
+    color?: string;
+    max?: number;
   }
 
   let {
     data,
-    width = 120,
-    height = 36,
-    strokeColor = "#00f2fe",
-    fillColor = "rgba(0, 242, 254, 0.12)",
+    width = 96,
+    height = 24,
+    color = "var(--s-cpu)",
+    max = 100,
   }: Props = $props();
 
-  let points = $derived(() => {
-    if (!data || data.length === 0) return "";
-    const min = 0;
-    const max = 100;
-    const stepX = width / Math.max(data.length - 1, 1);
+  let effectiveMax = $derived.by(() => {
+    if (max > 0) return max;
+    const peak = Math.max(...data, 1);
+    return peak * 1.15;
+  });
 
+  let points = $derived.by(() => {
+    if (!data || data.length === 0) return "";
+    if (data.length === 1) {
+      const y = height - (Math.min(data[0], effectiveMax) / effectiveMax) * (height - 4) - 2;
+      return `0,${y.toFixed(1)} ${width},${y.toFixed(1)}`;
+    }
+    const stepX = width / (data.length - 1);
     return data
       .map((val, idx) => {
         const x = idx * stepX;
-        const normalized = (val - min) / (max - min || 1);
-        const y = height - normalized * (height - 4) - 2;
+        const clamped = Math.max(0, Math.min(val, effectiveMax));
+        const y = height - (clamped / effectiveMax) * (height - 4) - 2;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(" ");
   });
 
-  let fillPath = $derived(() => {
-    if (!points()) return "";
-    return `M 0,${height} L ${points()} L ${width},${height} Z`;
+  let fillPath = $derived.by(() => {
+    if (!points) return "";
+    return `M 0,${height} L ${points} L ${width},${height} Z`;
   });
 </script>
 
-<div class="relative overflow-hidden rounded bg-slate-100/70 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800/80 p-0.5">
-  <svg {width} {height} class="overflow-visible block">
-    <defs>
-      <linearGradient id="grid-grad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color={strokeColor} stop-opacity="0.25" />
-        <stop offset="100%" stop-color={strokeColor} stop-opacity="0.0" />
-      </linearGradient>
-    </defs>
-
-    <!-- Oscilloscope background baseline -->
-    <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="currentColor" stroke-opacity="0.08" stroke-dasharray="2 2" />
-
-    {#if fillPath()}
-      <path d={fillPath()} fill="url(#grid-grad)" />
-    {/if}
-    {#if points()}
-      <polyline
-        points={points()}
-        fill="none"
-        stroke={strokeColor}
-        stroke-width="1.75"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    {/if}
-  </svg>
-</div>
+<svg
+  {width}
+  {height}
+  viewBox="0 0 {width} {height}"
+  class="block shrink-0 overflow-hidden"
+  aria-hidden="true"
+>
+  <line
+    x1="0"
+    y1={height / 2}
+    x2={width}
+    y2={height / 2}
+    stroke="var(--line)"
+    stroke-width="1"
+    stroke-dasharray="2 2"
+  />
+  {#if fillPath}
+    <path d={fillPath} fill={color} fill-opacity="0.14" />
+  {/if}
+  {#if points}
+    <polyline
+      {points}
+      fill="none"
+      stroke={color}
+      stroke-width="1.25"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  {/if}
+</svg>

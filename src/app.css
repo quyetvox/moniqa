@@ -3,82 +3,105 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  /* Native Quiet (Light) — default OS-integrated palette */
   :root {
-    --bg-cockpit: #f1f5f9;
-    --card-surface: rgba(255, 255, 255, 0.92);
-    --border-instrument: rgba(203, 213, 225, 0.85);
-    --text-hud: #0f172a;
-    --text-muted: #64748b;
-    --accent-cyan: #0284c7;
-    --accent-emerald: #059669;
-    --accent-amber: #d97706;
-    --accent-rose: #e11d48;
-    --gauge-empty: rgba(226, 232, 240, 0.9);
+    --bg-0: #f6f6f5;
+    --bg-1: #ffffff;
+    --bg-2: #efeeec;
+    --line: rgba(0, 0, 0, 0.09);
+    --line-strong: rgba(0, 0, 0, 0.16);
+
+    --text-1: #1d1d1b;
+    --text-2: #5d5d58;
+    --text-3: #8c8c86;
+
+    --accent: #2f6fdb;
+    --accent-soft: rgba(47, 111, 219, 0.12);
+
+    /* 5 Fixed Resource Series Colors (distinct in luminance & colorblind-safe) */
+    --s-cpu: #2f6fdb;
+    --s-mem: #8a4fd0;
+    --s-gpu: #3a9a4a;
+    --s-disk: #d98a1f;
+    --s-net: #1b9aa8;
+
+    /* Status Colors (separate from series colors) */
+    --ok: #2f8f4e;
+    --warn: #c27a0a;
+    --crit: #cf3a30;
+    --crit-bg: rgba(207, 58, 48, 0.08);
+    --warn-bg: rgba(194, 122, 10, 0.08);
+
+    --radius: 4px;
+    --radius-panel: 6px;
+    --row-h: 24px;
+
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Inter", system-ui, sans-serif;
+    --font-num: "SF Mono", "JetBrains Mono", "Cascadia Mono", ui-monospace, monospace;
   }
 
+  /* Instrument Dark — warm charcoal/moss control room palette */
   .dark {
-    --bg-cockpit: #080c14;
-    --card-surface: rgba(13, 19, 32, 0.85);
-    --border-instrument: rgba(30, 41, 59, 0.8);
-    --text-hud: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-cyan: #00f2fe;
-    --accent-emerald: #10b981;
-    --accent-amber: #fbbf24;
-    --accent-rose: #f43f5e;
-    --gauge-empty: rgba(30, 41, 59, 0.6);
+    --bg-0: #0f1211;
+    --bg-1: #151918;
+    --bg-2: #1c2120;
+    --line: rgba(220, 235, 228, 0.09);
+    --line-strong: rgba(220, 235, 228, 0.16);
+
+    --text-1: #dfe6e2;
+    --text-2: #98a39e;
+    --text-3: #66706b;
+
+    --accent: #5fb7a0;
+    --accent-soft: rgba(95, 183, 160, 0.14);
+
+    /* 5 Fixed Resource Series Colors */
+    --s-cpu: #6aa7e8;
+    --s-mem: #c7a2f0;
+    --s-gpu: #8fd16c;
+    --s-disk: #f0b45a;
+    --s-net: #4ec9d4;
+
+    /* Status Colors */
+    --ok: #6fbf8b;
+    --warn: #e6b04a;
+    --crit: #ee6a5f;
+    --crit-bg: rgba(238, 106, 95, 0.09);
+    --warn-bg: rgba(230, 176, 74, 0.09);
+  }
+
+  .density-comfortable {
+    --row-h: 28px;
+  }
+
+  .density-compact {
+    --row-h: 24px;
   }
 
   html {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
-    letter-spacing: -0.01em;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
     user-select: none;
     -webkit-user-select: none;
   }
 
   body {
-    background-color: var(--bg-cockpit);
-    color: var(--text-hud);
+    background-color: var(--bg-0);
+    color: var(--text-1);
     overflow-x: hidden;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 140ms ease-out, color 140ms ease-out;
   }
 }
 
-/* Cybernetic Grid & Instrumentation Styling */
-.telemetry-grid {
-  background-size: 24px 24px;
-  background-image: 
-    linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
-}
-
-.dark .telemetry-grid {
-  background-size: 28px 28px;
-  background-image: 
-    linear-gradient(to right, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
-}
-
-/* Monospace Tabular Figures for Gauges and Metres */
-.font-tabular {
-  font-family: "SF Mono", Menlo, Monaco, "Courier New", monospace;
+.font-num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
-/* Subtle Glowing Accents */
-.glow-cyan {
-  text-shadow: 0 0 12px rgba(0, 242, 254, 0.45);
-}
-
-.glow-emerald {
-  text-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
-}
-
-.glow-amber {
-  text-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
-}
-
-/* Scrollbar Minimal */
+/* Minimal native-like scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -87,9 +110,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 9999px;
+  background: var(--line-strong);
+  border-radius: 3px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.5);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
 }
